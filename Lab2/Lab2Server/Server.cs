@@ -10,6 +10,7 @@ namespace Lab2Server
     {
         static int port = 8005;
         private static int maxQueueLength = 10;
+        private static string exitKeyword = "panda";
         
         static void Main(string[] args)
         {     
@@ -33,28 +34,44 @@ namespace Lab2Server
 
                  while (true) {
                      var handler = listenSocket.Accept();
-                     StringBuilder builder = new StringBuilder();
-                     byte[] data = new byte[255];
-                     int totalRecvd = 0;
-                     int chunkSize = 0;
-                     do {
-                         chunkSize = handler.Receive(data);
-                         
-                         // AM: technically, the below sucks: reason being that if the byte data is not aligned
-                         // (and it most likely is) - we'll have nasty problems with multi-byte decoding. 
-                         // Proper way would be to read the *entire* bytes payload, glue it together, and
-                         // only then try to decode.
-                         var decodedStr = Encoding.UTF8.GetString(data, 0, data.Length);
-                         builder.Append(decodedStr);
-                         totalRecvd += chunkSize;
-                     } while (handler.Available > 0);
-                     
-                     Console.WriteLine(DateTime.Now.ToShortTimeString() + ": " + builder.ToString());
-                     Console.WriteLine("Total of {0} bytes received.", totalRecvd);
+                     Console.WriteLine("Staring new session...");
+                     var welcomeMsg = String.Format(
+                         "Welcome to the server. Please type \"{0}\" to disconnect\n\n", exitKeyword);
+                     handler.Send(Encoding.ASCII.GetBytes(welcomeMsg.ToString()));
 
-                     var response = String.Format(
-                         "Received by server: {0}", builder.ToString());
-                     handler.Send(Encoding.UTF8.GetBytes(builder.ToString()));
+                     while (true)
+                     {
+                         StringBuilder builder = new StringBuilder();
+                         byte[] data = new byte[255];
+                         int totalRecvd = 0;
+                         int chunkSize = 0;
+                         do
+                         {
+                             chunkSize = handler.Receive(data);
+
+                             // AM: technically, the below sucks: reason being that if the byte data is not aligned
+                             // (and it most likely is) - we'll have nasty problems with multi-byte decoding. 
+                             // Proper way would be to read the *entire* bytes payload, glue it together, and
+                             // only then try to decode.
+                             var decodedStr = Encoding.UTF8.GetString(data, 0, chunkSize);
+                             builder.Append(decodedStr);
+                             totalRecvd += chunkSize;
+                         } while (handler.Available > 0);
+
+                         var msg = builder.ToString().TrimEnd('\r', '\n');
+                         Console.WriteLine(DateTime.Now.ToShortTimeString() + ": " + msg);
+                         Console.WriteLine("Total of {0} bytes received.", totalRecvd);
+                         if (msg.Equals(exitKeyword))
+                         {
+                             Console.WriteLine("Stop keyword received; closing session.");
+                             break;
+                         }
+                         else
+                         {
+                             handler.Send(Encoding.UTF8.GetBytes(builder.ToString()));
+                         }
+                     }
+                     handler.Send(Encoding.UTF8.GetBytes("Closing connection, bye-bye!"));
                      handler.Shutdown(SocketShutdown.Both);
                      handler.Close();
                  }

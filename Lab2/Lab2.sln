@@ -1,8 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lab1Server", "Lab1Server\Lab1Server.csproj", "{DE5F74B2-D406-4213-9998-BBC2E4C95DED}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lab2Server", "Lab2Server\Lab2Server.csproj", "{DE5F74B2-D406-4213-9998-BBC2E4C95DED}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lab1Client", "Lab1Client\Lab1Client.csproj", "{D8D17038-3BC0-42CD-8B4B-30BE0FB8552E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lab2Client", "Lab2Client\Lab2Client.csproj", "{D8D17038-3BC0-42CD-8B4B-30BE0FB8552E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
