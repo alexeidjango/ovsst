@@ -1,15 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Net;
+﻿using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 
 namespace Lab0
 {
     class Program
     {
-        static void Main(string[] args)
+        static void Main()
         {
             // Print special addresses
             var specialAddresses = new Dictionary<string, IPAddress> {
@@ -27,21 +24,50 @@ namespace Lab0
             }
             Console.WriteLine();
             
-            // get own machine's info
-            AddressFamily[] internalAddrFamilies = {
-                AddressFamily.InterNetworkV6, AddressFamily.InterNetwork
-            };
+            // get own machine's hostname
             var myHost = Dns.GetHostName();
-            var myLocalIpAddresses = Dns.GetHostAddresses(myHost)
-                .Where(a => internalAddrFamilies.Contains(a.AddressFamily))
-                .OrderBy(a => a.AddressFamily);
             Console.WriteLine("My local machine (hostname: {0})\n------------", myHost);
-            foreach (var entry in myLocalIpAddresses) {
-                Console.WriteLine("{0}: {1}", entry.AddressFamily, entry.ToString());
+            
+            // go over ethernet and wifi interfaces and print their IPs
+            var myEnInterfaces = NetworkInterface.GetAllNetworkInterfaces()
+                .Where(ni => ni.OperationalStatus == OperationalStatus.Up && 
+                             (ni.NetworkInterfaceType == NetworkInterfaceType.Wireless80211 || 
+                              ni.NetworkInterfaceType == NetworkInterfaceType.Ethernet))
+                .OrderBy(ni => ni.Name);
+
+            foreach (var enInterface in myEnInterfaces) {
+                var ipProps = enInterface.GetIPProperties();
+                // we only want interfaces with some real IPs assigned
+                var uniCastEntries = ipProps.UnicastAddresses
+                    .Where(a => new[] {
+                        AddressFamily.InterNetworkV6, AddressFamily.InterNetwork
+                    }.Contains(a.Address.AddressFamily));
+                if (!uniCastEntries.Any())
+                {
+                    continue;
+                }
+                Console.WriteLine("{0} ({1})", enInterface.Name, enInterface.NetworkInterfaceType);
+                
+                foreach (var uniCastEntry in uniCastEntries)
+                {
+                    Console.WriteLine("  {0} ", uniCastEntry.Address);
+                }
+
+                if (ipProps.DnsAddresses.Count() != 0)
+                {
+                    Console.Write("  DNS: ");
+                    foreach (var dnsAddress in ipProps.DnsAddresses)
+                    {
+                        Console.Write("{0} ", dnsAddress);
+                    }
+                    Console.WriteLine();
+                }
+               
+                Console.WriteLine();
             }
             Console.WriteLine();
 
-            // get hostinfo for a given address
+            // get host info for a given address
             const string hostName = "unn.ru";
             try {
                 var hostInfo = Dns.GetHostEntry(hostName);
