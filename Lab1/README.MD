@@ -10,6 +10,6 @@ Client takes 2 params (ip and port), connects to socket, reads a string from con
 
 
 
-![lab_0](/Users/alexei/playground/ovsst-dotnet/Screenshots/lab_1.gif)
+![lab_0](../Screenshots/lab_1.gif)
 
-![lab_0](/Users/alexei/playground/ovsst-dotnet/Screenshots/lab_1.png)
+![lab_0](../Screenshots/lab_1.png)
