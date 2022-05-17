@@ -10,11 +10,11 @@ Contents / links to individual lab works / explanations:
 
 
 
-[Lab 0](Lab0/README.MD) - local addresses and hostname resolution
+[Lab 0](../Lab0) - local addresses and hostname resolution
 
-[Lab 1](Lab1/README.MD) - simplistic echo server
+[Lab 1](../Lab1) - simplistic echo server
 
-[Lab 2](Lab2/README.MD) - simplistic echo server with stop-word
+[Lab 2](../Lab2) - simplistic echo server with stop-word
 
-[Lab 3](Lab3/README.MD) - multithreaded version of the server, capable of serving multiple connections simultaneously
+[Lab 3](../Lab3) - multithreaded version of the server, capable of serving multiple connections simultaneously
 
