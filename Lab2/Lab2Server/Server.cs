@@ -47,6 +47,7 @@ namespace Lab2Server
                          int chunkSize = 0;
                          do
                          {
+                             data = new byte[255];
                              chunkSize = handler.Receive(data);
 
                              // AM: technically, the below sucks: reason being that if the byte data is not aligned
@@ -61,15 +62,20 @@ namespace Lab2Server
                          var msg = builder.ToString().TrimEnd('\r', '\n');
                          Console.WriteLine(DateTime.Now.ToShortTimeString() + ": " + msg);
                          Console.WriteLine("Total of {0} bytes received.", totalRecvd);
-                         if (msg.Equals(exitKeyword))
+                         // check exit conditions
+                         if (msg.Equals(exitKeyword.ToString()))
                          {
                              Console.WriteLine("Stop keyword received; closing session.");
                              break;
                          }
-                         else
+                         
+                         if (totalRecvd == 0)
                          {
-                             handler.Send(Encoding.UTF8.GetBytes(builder.ToString()));
+                             Console.WriteLine("Session ended by client.");
+                             break;
                          }
+                        
+                         handler.Send(Encoding.UTF8.GetBytes(builder.ToString()));
                      }
                      handler.Send(Encoding.UTF8.GetBytes("Closing connection, bye-bye!"));
                      handler.Shutdown(SocketShutdown.Both);

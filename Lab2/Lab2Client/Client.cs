@@ -1,5 +1,6 @@
 ﻿// Permanent location - https://github.com/alexeidjango/ovsst
 
+
 using System.Text;
 using System.Net;
 using System.Net.Sockets;
@@ -29,27 +30,40 @@ namespace Lab1Client
                                                       
                 socket.Connect(ipPoint);
                 Console.WriteLine("Connected.");
-                Console.Write("> ");
-                string message = Console.ReadLine();
-                var bytesToSend = Encoding.Unicode.GetBytes(message);
-                
-                socket.Send(bytesToSend);
-                
-                StringBuilder builder = new StringBuilder();
-                byte[] data = new byte[255];
-                do {
-                    socket.Receive(data);
-                    // AM: technically, the below sucks: reason being that if the byte data is not aligned
-                    // (and it most likely is) - we'll have nasty problems with multi-byte decoding. 
-                    // Proper way would be to read the *entire* bytes payload, glue it together, and
-                    // only then try to decode.
-                    var decodedStr = Encoding.UTF8.GetString(data, 0, data.Length);
-                    builder.Append(decodedStr);
-                } while (socket.Available > 0);
- 
-                Console.WriteLine("Server responded with:\n {0}", builder);
+    
+                while(true) {
+                    try {
+                        StringBuilder builder = new StringBuilder();
+                        byte[] data = new byte[255];
+                        do {
+                            var br = socket.Receive(data);
+                            // AM: technically, the below sucks: reason being that if the byte data is not aligned
+                            // (and it most likely is) - we'll have nasty problems with multi-byte decoding. 
+                            // Proper way would be to read the *entire* bytes payload, glue it together, and
+                            // only then try to decode.
+                            var decodedStr = Encoding.UTF8.GetString(data, 0, data.Length);
+                            builder.Append(decodedStr);
+                        } while (socket.Available > 0);
+                        
+                        // now there are no available bytes to read; let's poll the socket to see if
+                        // it's still open. If not - break the loop
+                        if (socket.Poll(20, SelectMode.SelectRead))
+                        {
+                            break;
+                        }
+                        Console.WriteLine(builder);
+                        Console.Write("> ");
+                        string message = Console.ReadLine();
+                        var bytesToSend = Encoding.UTF8.GetBytes(message);
+                        socket.Send(bytesToSend);
+                    }
+                    catch (Exception e) {
+                        break;
+                    }
+                }
                 socket.Shutdown(SocketShutdown.Both);
                 socket.Close();
+                Console.WriteLine("Connection closed.");
             }
             catch(Exception e)
             {
