@@ -10,7 +10,9 @@ Contents / links to individual lab works / explanations:
 
 
 
-[Lab 0](Lab0/README.MD)
+[Lab 0](Lab0/README.MD) - local addresses and hostname resolution
 
-[Lab 1](Lab1/README.MD)
+[Lab 1](Lab1/README.MD) - simplistic echo server
+
+[Lab 2](Lab2/README.MD) - simplistic echo server with stop-word
 
