@@ -1,4 +1,6 @@
-﻿using System.Text;
+﻿// Permanent location - https://github.com/alexeidjango/ovsst
+
+using System.Text;
 using System.Net;
 using System.Net.Sockets;
 

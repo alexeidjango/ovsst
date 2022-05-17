@@ -1,4 +1,6 @@
-﻿using System.Net;
+﻿// Permanent location - https://github.com/alexeidjango/ovsst
+
+using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 
@@ -81,8 +83,6 @@ namespace Lab0
             {
                 Console.WriteLine("Unable to resolve host {0}: {1}", hostName, e.Message);
             }
-            
-
             Console.ReadLine();
         }
     }
