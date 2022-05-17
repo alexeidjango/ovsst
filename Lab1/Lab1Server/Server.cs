@@ -4,7 +4,7 @@ using System.Text;
 using System.Net;
 using System.Net.Sockets;
 
-namespace SocketTcpServer
+namespace Lab1Server
 {
     class Program
     {
@@ -53,9 +53,8 @@ namespace SocketTcpServer
                      Console.WriteLine("Total of {0} bytes received.", totalRecvd);
 
                      var response = String.Format(
-                         "Your message was:\n----------\n{0}\n----------\n" +
-                         "Closing your connection.\n\n", builder.ToString());
-                     handler.Send(Encoding.UTF8.GetBytes(response));
+                         "Received by server: {0}", builder.ToString());
+                     handler.Send(Encoding.UTF8.GetBytes(builder.ToString()));
                      handler.Shutdown(SocketShutdown.Both);
                      handler.Close();
                  }
