@@ -95,9 +95,9 @@ namespace Lab4Server
                                 break;
                         }
                     } else {
-                        broadcastMsg = string.Format("{0}:\t{1}:\t{2}",
+                        broadcastMsg = string.Format("{0}:\t{1} {2}",
                             userName, DateTime.Now.ToLocalTime(), msg);
-                        targetMsg = string.Format("You:\t{0}:\t{1}",
+                        targetMsg = string.Format("You:\t{0} {1}",
                             DateTime.Now.ToLocalTime(), msg);
                         whisper(targetMsg);
                         broadcast(broadcastMsg);

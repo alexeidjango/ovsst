@@ -18,3 +18,5 @@ Contents / links to individual lab works / explanations:
 
 [Lab 3](Lab3) - multithreaded version of the server, capable of serving multiple connections simultaneously
 
+[Lab 4](Lab4) - simple chat
+
