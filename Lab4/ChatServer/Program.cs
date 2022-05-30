@@ -9,24 +9,23 @@ namespace Lab4Server
     class Program
     {
         private static int maxQueueLength = 10;
-
+        
         class ConnectionWorker
         {
             private Socket _sck = null;
-            private static List<ConnectionWorker> _allWorkers = null;
+            
             private Guid _uuid;
             public Guid uuid => _uuid;
             private string _userName = "";
             public string userName => _userName;
 
-            public ConnectionWorker(Socket sck, string name, List<ConnectionWorker> workers) 
+            public ConnectionWorker(Socket sck) 
             {
                 var _thread = new Thread(this.func);
                 _uuid = Guid.NewGuid();
                 _sck = sck;
-                _allWorkers = workers;
-                _thread.Name = name;
-                Console.WriteLine("Starting new connection worker (uuid = {0})", name);
+                _thread.Name = "";
+                Console.WriteLine("Starting a worker thread for the new connection.");
                 _thread.Start(sck); 
             }
             
@@ -80,7 +79,7 @@ namespace Lab4Server
                                 break;
                             case "/list": 
                                 whisper("People in this chat:\n");
-                                foreach (var worker in _allWorkers) {
+                                foreach (var worker in _connectionWorkers) {
                                     whisper(String.Format(" * {0}\n", worker.userName));
                                 }
                                 break;
@@ -110,19 +109,18 @@ namespace Lab4Server
                 }
                  handler.Shutdown(SocketShutdown.Both);
                  handler.Close();
-                 _allWorkers.Remove(_allWorkers.Find(w => w.uuid == uuid));
+                 _connectionWorkers.Remove(_connectionWorkers.Find(w => w.uuid == uuid));
                  // before disconnecting, remove yourself from the list of workers
             }
 
             private void broadcast(string msg) {
-                Console.WriteLine(msg);
-                foreach (var worker in _allWorkers.Where(w => w.uuid != _uuid)) {
+                Console.WriteLine(msg.TrimEnd('\n').TrimStart('\n'));
+                foreach (var worker in _connectionWorkers.Where(w => w.uuid != _uuid)) {
                     worker.whisper(msg);
                 }
             }
 
             private void whisper(string msg) {
-                Console.WriteLine("I am {0}, whispering: {1}", uuid, msg);
                 _sck.Send(Encoding.UTF8.GetBytes(msg));
             }
         }
@@ -157,7 +155,7 @@ namespace Lab4Server
                     var handler = listenSocket.Accept();
                     Guid uuid = Guid.NewGuid();
                     Console.WriteLine("Starting new session...");
-                    var th = new ConnectionWorker(handler, "", _connectionWorkers);
+                    var th = new ConnectionWorker(handler);
                     _connectionWorkers.Add(th);
                 }
             }
