@@ -31,8 +31,8 @@ namespace Lab4Client
                 name = Console.ReadLine();
             }
 
-            removePreviousLine(2);
-            Console.WriteLine("Trying to connect to {0}:{1}...", address, port);
+            Console.Clear();
+            Console.WriteLine("Trying to connect to {0}:{1}...\n", address, port);
 
             IPEndPoint ipPoint = new IPEndPoint(IPAddress.Parse(address), Int32.Parse(port));
             _socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);

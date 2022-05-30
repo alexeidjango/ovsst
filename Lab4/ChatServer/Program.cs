@@ -8,26 +8,32 @@ namespace Lab4Server
 {
     class Program
     {
-        static int port = 8005;
         private static int maxQueueLength = 10;
 
         class ConnectionWorker
         {
-            private Thread thread = null;
-            private static Socket sck = null;
-            public ConnectionWorker(Socket handler, string name) 
+            private Socket _sck = null;
+            private static List<ConnectionWorker> _allWorkers = null;
+            private Guid _uuid;
+            public Guid uuid => _uuid;
+            private string _userName = "";
+            public string userName => _userName;
+
+            public ConnectionWorker(Socket sck, string name, List<ConnectionWorker> workers) 
             {
-                thread = new Thread(this.func);
-                sck = handler;
-                thread.Name = name;
+                var _thread = new Thread(this.func);
+                _uuid = Guid.NewGuid();
+                _sck = sck;
+                _allWorkers = workers;
+                _thread.Name = name;
                 Console.WriteLine("Starting new connection worker (uuid = {0})", name);
-                thread.Start(handler); 
+                _thread.Start(sck); 
             }
             
             void func(object hnd)
             {
                 var handler = (Socket) hnd;
-                var threadName = Thread.CurrentThread.Name;
+                _userName = Thread.CurrentThread.Name;
                 while (true) { 
                     StringBuilder builder = new StringBuilder();
                     byte[] data = new byte[255];
@@ -41,11 +47,11 @@ namespace Lab4Server
                              totalRecvd += chunkSize;
                         } while (handler.Available > 0);
                     } catch { 
-                        Console.WriteLine("Client {0} disconnected", threadName);
+                        Console.WriteLine("Client {0} disconnected", userName);
                         break;
                     }
                     if (totalRecvd == 0) {
-                        Console.WriteLine("{0} left.", threadName);
+                        Console.WriteLine("{0} left.", userName);
                         break;
                     }
                     var msg = builder.ToString().TrimEnd('\r', '\n').Trim();
@@ -59,53 +65,65 @@ namespace Lab4Server
                         var command = commandParts[0];
                         switch (command) {
                             case "/join":
+                                if (userName.Length > 0) {
+                                    break;
+                                }
                                 var name = msg.Replace("/join", "").Trim();
-                                if (name.Length > 0)
-                                {
-                                    threadName = name;
-                                    broadcastMsg = string.Format("{0} joined", name);
+                                if (name.Length > 0) {
+                                    _userName = name;
+                                    broadcastMsg = string.Format("\n{0} joined.\n", name);
                                     targetMsg = string.Format(
                                         "Hello {0}! Welcome to the server! Type {1} to exit.\n", name, "/exit");
-                                    whisperToClient(targetMsg);
-                                    broadcastMessage(broadcastMsg);
+                                    whisper(targetMsg);
+                                    broadcast(broadcastMsg);
                                 }
                                 break;
-                            case "/list": break;
+                            case "/list": 
+                                whisper("People in this chat:\n");
+                                foreach (var worker in _allWorkers) {
+                                    whisper(String.Format(" * {0}\n", worker.userName));
+                                }
+                                break;
                             case "/exit":
-                                broadcastMsg = string.Format("{0} left.", threadName);
-                                targetMsg = string.Format("Good bye, {0}!\n", threadName);
-                                whisperToClient(targetMsg);
-                                broadcastMessage(broadcastMsg);
+                                broadcastMsg = string.Format("\n{0} left.\n", userName);
+                                targetMsg = string.Format("Good bye, {0}!\n", userName);
+                                whisper(targetMsg);
+                                broadcast(broadcastMsg);
                                 exitRequested = true;
                                 break;
                             default: 
-                                whisperToClient("Sorry, this command is not recognized\n");
+                                whisper("Sorry, this command is not recognized\n");
                                 break;
                         }
                     } else {
-                        broadcastMsg = string.Format("{0}: {1}: {2}",
-                            threadName, DateTime.Now.ToLocalTime(), msg);
-                        targetMsg = string.Format("YOU: {1}: {2}",
+                        broadcastMsg = string.Format("{0}:\t{1}:\t{2}",
+                            userName, DateTime.Now.ToLocalTime(), msg);
+                        targetMsg = string.Format("You:\t{0}:\t{1}",
                             DateTime.Now.ToLocalTime(), msg);
-                        whisperToClient(targetMsg);
-                        broadcastMessage(broadcastMsg);
+                        whisper(targetMsg);
+                        broadcast(broadcastMsg);
                     }
 
                     if (exitRequested) {
                         break;
                     }
                 }
-                 // handler.Send(Encoding.UTF8.GetBytes("Closing connection, bye-bye!"));
                  handler.Shutdown(SocketShutdown.Both);
                  handler.Close();
+                 _allWorkers.Remove(_allWorkers.Find(w => w.uuid == uuid));
+                 // before disconnecting, remove yourself from the list of workers
             }
 
-            private static void broadcastMessage(string msg) {
+            private void broadcast(string msg) {
                 Console.WriteLine(msg);
+                foreach (var worker in _allWorkers.Where(w => w.uuid != _uuid)) {
+                    worker.whisper(msg);
+                }
             }
 
-            private static void whisperToClient(string msg) {
-                sck.Send(Encoding.UTF8.GetBytes(msg));
+            private void whisper(string msg) {
+                Console.WriteLine("I am {0}, whispering: {1}", uuid, msg);
+                _sck.Send(Encoding.UTF8.GetBytes(msg));
             }
         }
 
@@ -114,17 +132,17 @@ namespace Lab4Server
         static void Main(string[] args)
         {
             _connectionWorkers = new List<ConnectionWorker>();
-            var myHost = Dns.GetHostName();
-            var myIpV4Ips = Dns.GetHostAddresses(myHost)
-                .Where(a => a.AddressFamily == AddressFamily.InterNetwork);
-            Console.Write("Server is running on {0}. Available IPs: ", myHost);
-            var lastAddr = myIpV4Ips.Last();
-            foreach (var ipv4addr in myIpV4Ips)
+            if (args.Length != 2)
             {
-                Console.Write("{0}{1}", ipv4addr, lastAddr == ipv4addr ? "\n" : ", ");
+                // see https://stackoverflow.com/questions/616584/how-do-i-get-the-name-of-the-current-executable-in-c
+                var executableName = AppDomain.CurrentDomain.FriendlyName;
+                Console.WriteLine("Usage: {0} address port", executableName);
+                Environment.Exit(-1);
             }
-
-            var listenAddr = myIpV4Ips.First();
+            var address = args[0];
+            var port = Int32.Parse(args[1]);
+            
+            var listenAddr = IPAddress.Parse(address);
             var ipPoint = new IPEndPoint(listenAddr, port);
             var listenSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             try
@@ -138,10 +156,9 @@ namespace Lab4Server
                 {
                     var handler = listenSocket.Accept();
                     Guid uuid = Guid.NewGuid();
-                    string uuidStr = uuid.ToString();
                     Console.WriteLine("Starting new session...");
-                    var th = new ConnectionWorker(handler, uuidStr);
-                    _connectionWorkers.Append(th);
+                    var th = new ConnectionWorker(handler, "", _connectionWorkers);
+                    _connectionWorkers.Add(th);
                 }
             }
             catch (Exception e)
